@@ -21,7 +21,7 @@ class CallTranscriptsStream(GongStream):
 
     schema = th.PropertiesList(
         th.Property("callId", th.StringType),
-        th.Property("started", th.DateTimeType),
+        th.Property("started", th.DateTimeType, required=True),
         th.Property(
             "transcript",
             th.ArrayType(
@@ -50,11 +50,17 @@ class CallTranscriptsStream(GongStream):
         if not parent_record:
             raise ValueError("Parent record not found in context")
 
-        # Copy the started field from parent call
+        # Ensure the started field exists in the parent record
         if "started" not in parent_record:
             raise ValueError("started field not found in parent record")
 
+        # Set the started field from parent record
         row["started"] = parent_record["started"]
+
+        # Ensure callId is set
+        if "callId" not in row:
+            row["callId"] = parent_record["id"]
+
         return row
 
     def prepare_request_payload(
