@@ -21,6 +21,7 @@ class CallTranscriptsStream(GongStream):
 
     schema = th.PropertiesList(
         th.Property("callId", th.StringType),
+        th.Property("started", th.DateTimeType),
         th.Property(
             "transcript",
             th.ArrayType(
@@ -41,6 +42,14 @@ class CallTranscriptsStream(GongStream):
             ),
         ),
     ).to_dict()
+
+    def post_process(self, row: dict, context: Optional[dict]) -> dict:
+        """As needed, append or transform raw data to match expected structure."""
+        # Get the parent record (call) from context
+        parent_record = context.get("parent_record", {})
+        # Copy the started field from parent call
+        row["started"] = parent_record.get("started")
+        return row
 
     def prepare_request_payload(
         self, context: Optional[dict], next_page_token: Optional[Any]

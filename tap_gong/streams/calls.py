@@ -288,5 +288,8 @@ class CallsStream(GongStream):
         "Overwrite default method to return both the record and child context."
         for row in self.request_records(context):
             row = self.post_process(row, context)
-            child_context = {"call_id": row["id"]}
+            child_context = {
+                "call_id": row["id"],
+                "parent_record": row,  # Include the parent record in child context
+            }
             yield (row, child_context)
