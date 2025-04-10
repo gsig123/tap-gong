@@ -200,6 +200,8 @@ class CallsStream(GongStream):
     ).to_dict()
 
     def post_process(self, row: dict, context: Optional[dict]) -> dict:
+        """Process the record to ensure all required fields are present."""
+        # Set the id and started fields from metadata
         row["id"] = row["metaData"]["id"]
         row["started"] = row["metaData"]["started"]
 

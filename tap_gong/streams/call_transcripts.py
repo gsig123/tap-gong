@@ -47,8 +47,14 @@ class CallTranscriptsStream(GongStream):
         """As needed, append or transform raw data to match expected structure."""
         # Get the parent record (call) from context
         parent_record = context.get("parent_record", {})
+        if not parent_record:
+            raise ValueError("Parent record not found in context")
+
         # Copy the started field from parent call
-        row["started"] = parent_record.get("started")
+        if "started" not in parent_record:
+            raise ValueError("started field not found in parent record")
+
+        row["started"] = parent_record["started"]
         return row
 
     def prepare_request_payload(
