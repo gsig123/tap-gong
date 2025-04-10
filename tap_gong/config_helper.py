@@ -10,43 +10,63 @@ end_date_key = "end_date"
 
 def get_date_time_string(value, format_string):
     if value:
+        # Ensure the datetime is in UTC
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=timezone.utc)
+        elif value.tzinfo != timezone.utc:
+            value = value.astimezone(timezone.utc)
         return value.strftime(format_string)
     return None
 
 
 def get_date_time_string_from_config(config, key, format_string):
-    return get_date_time_string(get_date_time_value_from_config(config, key), format_string)
+    return get_date_time_string(
+        get_date_time_value_from_config(config, key), format_string
+    )
 
 
 def get_date_time_value_from_config(config, key):
-    conf_date_time = config.get(key, '').strip()
+    conf_date_time = config.get(key, "").strip()
     if conf_date_time:
-        return parser.parse(conf_date_time)
+        # Parse the date and ensure it's in UTC
+        dt = parser.parse(conf_date_time)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt
     return None
 
 
 def date_value_to_iso_string(time):
     # python datetime.isoformat() end with +00:00, but need Z
     # i.e. we need 2023-01-19T01:23:45Z instead of 2023-01-19T01:23:45+00:00
-    return f'{time.isoformat()[:-6]}Z'
+    if time.tzinfo is None:
+        time = time.replace(tzinfo=timezone.utc)
+    elif time.tzinfo != timezone.utc:
+        time = time.astimezone(timezone.utc)
+    return f"{time.isoformat()[:-6]}Z"
 
 
 def extended_config_validation(config):
     """Date validation (match with gong API documentation):
-        Both start_date(date and time) and end_date(date time) are required, check that they are valid.
+    Both start_date(date and time) and end_date(date time) are required, check that they are valid.
     """
     try:
         start_date = get_date_time_value_from_config(config, start_date_key)
         end_date = get_date_time_value_from_config(config, end_date_key)
         if not start_date:
             raise BaseException(
-                'Missing valid start date in configuration. Please provide correct start date.')
+                "Missing valid start date in configuration. Please provide correct start date."
+            )
         if not end_date:
             raise BaseException(
-                'Missing valid end date in configuration. Please provide correct end date.')
+                "Missing valid end date in configuration. Please provide correct end date."
+            )
+        if start_date >= end_date:
+            raise BaseException("Start date must be before end date.")
     except Exception as e:
         raise BaseException(
-            f'Configuration error: Invalid date found in configuration file: \n"{e}"')
+            f'Configuration error: Invalid date found in configuration file: \n"{e}"'
+        )
 
 
 def get_stats_dates_from_config(config, retry=False):
@@ -63,13 +83,16 @@ def get_stats_dates_from_config(config, retry=False):
     """
     start_date = get_date_time_value_from_config(config, start_date_key)
     end_date = get_date_time_value_from_config(config, end_date_key)
-    now = datetime.now(timezone.utc) if not retry else datetime.now(
-        timezone.utc) - relativedelta(days=1)
+    now = (
+        datetime.now(timezone.utc)
+        if not retry
+        else datetime.now(timezone.utc) - relativedelta(days=1)
+    )
     if end_date > now:
         end_date = now
     if start_date >= end_date - relativedelta(days=1):
         start_date = end_date - relativedelta(days=1)
     return {
         "stats_from_date": date_value_to_iso_string(start_date),
-        "stats_to_date": date_value_to_iso_string(end_date)
+        "stats_to_date": date_value_to_iso_string(end_date),
     }
