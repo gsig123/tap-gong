@@ -257,6 +257,19 @@ class CallsStream(GongStream):
             self.config, helper.end_date_key, helper.date_time_format_string
         )
 
+        # Ensure fromDateTime is before toDateTime
+        if fromDateTime and toDateTime:
+            from_dt = helper.get_date_time_value_from_config(
+                {"date": fromDateTime}, "date"
+            )
+            to_dt = helper.get_date_time_value_from_config({"date": toDateTime}, "date")
+            if from_dt >= to_dt:
+                # If dates are equal or from is after to, adjust from to be one day before to
+                from_dt = to_dt - helper.relativedelta(days=1)
+                fromDateTime = helper.get_date_time_string(
+                    from_dt, helper.date_time_format_string
+                )
+
         request_body = {
             "cursor": next_page_token,
             "filter": {"fromDateTime": fromDateTime, "toDateTime": toDateTime},
