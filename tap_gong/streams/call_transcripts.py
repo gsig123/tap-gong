@@ -16,7 +16,7 @@ class CallTranscriptsStream(GongStream):
     records_jsonpath = "$.callTranscripts[*]"
     parent_stream_type = CallsStream
     ignore_parent_replication_key = False
-    replication_key = "started"
+    replication_key = None
     state_partitioning_keys = []
 
     schema = th.PropertiesList(
